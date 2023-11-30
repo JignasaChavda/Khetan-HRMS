@@ -111,7 +111,7 @@ app_license = "MIT"
 # Override standard doctype classes
 
 override_doctype_class = {
-	"Employee Checkin": "khetangroup_hrms.employee_checkin_overrides.EmployeeCheckin"
+	"Employee Checkin": "khetanhrms.khetan_hrms.employee_checkin_overrides.EmployeeCheckin"
 }
 
 # Document Events
