@@ -216,37 +216,11 @@ override_doctype_class = {
 #	"khetanhrms.auth.validate"
 # ]
 fixtures = [
-    "Workflow",
-    "Workflow State",
-    "DocType",
-    "Custom DocPerm",
-    "Role",
-    {"dt":"Server Script","filters":[
-        [
-            "module","in",[
-               "Khetan HRMS"
-            ],
-        ]
-    ]},
-    {"dt":"Client Script","filters":[
-        [
-            "module","in",[
-               "Khetan HRMS"
-            ],
-        ]
-    ]},
     {"dt":"Report","filters":[
         [
             "module","in",[
                 "Khetan HRMS"
             ]
-        ]
-    ]},
-    {"dt":"Dashboard","filters":[
-        [
-            "module","in",[
-               "Khetan HRMS"
-            ],
         ]
     ]}
 
