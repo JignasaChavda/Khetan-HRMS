@@ -110,9 +110,9 @@ app_license = "MIT"
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-#	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+	"Employee Checkin": "khetangroup_hrms.employee_checkin_overrides.EmployeeCheckin"
+}
 
 # Document Events
 # ---------------
@@ -215,3 +215,39 @@ app_license = "MIT"
 # auth_hooks = [
 #	"khetanhrms.auth.validate"
 # ]
+fixtures = [
+    "Workflow",
+    "Workflow State",
+    "DocType",
+    "Custom DocPerm",
+    "Role",
+    {"dt":"Server Script","filters":[
+        [
+            "module","in",[
+               "Khetan HRMS"
+            ],
+        ]
+    ]},
+    {"dt":"Client Script","filters":[
+        [
+            "module","in",[
+               "Khetan HRMS"
+            ],
+        ]
+    ]},
+    {"dt":"Report","filters":[
+        [
+            "module","in",[
+                "Khetan HRMS"
+            ]
+        ]
+    ]},
+    {"dt":"Dashboard","filters":[
+        [
+            "module","in",[
+               "Khetan HRMS"
+            ],
+        ]
+    ]}
+
+]
