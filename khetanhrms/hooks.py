@@ -217,7 +217,6 @@ override_doctype_class = {
 #	"khetanhrms.auth.validate"
 # ]
 fixtures = [
-    "Document Naming Rule",
     {"dt":"Custom Field","filters":[
         [
             "module","in",[
