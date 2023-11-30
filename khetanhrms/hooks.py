@@ -213,7 +213,6 @@ override_doctype_class = {
 # Authentication and authorization
 # --------------------------------
 
-
 # auth_hooks = [
 #	"khetanhrms.auth.validate"
 # ]
