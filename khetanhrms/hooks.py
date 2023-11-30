@@ -111,7 +111,8 @@ app_license = "MIT"
 # Override standard doctype classes
 
 override_doctype_class = {
-	"Employee Checkin": "khetanhrms.khetan_hrms.employee_checkin_overrides.EmployeeCheckin"
+	"Employee Checkin": "khetanhrms.employee_checkin_overrides.EmployeeCheckin",
+    "Employee": "khetanhrms.employee_overrides.Employee"
 }
 
 # Document Events
@@ -216,12 +217,48 @@ override_doctype_class = {
 #	"khetanhrms.auth.validate"
 # ]
 fixtures = [
+    "Document Naming Rule",
+    {"dt":"Custom Field","filters":[
+        [
+            "module","in",[
+                "Khetan HRMS"
+            ]
+        ]
+    ]},
+    {"dt":"Property Setter","filters":[
+        [
+            "module","in",[
+                "Khetan HRMS"
+            ]
+        ]
+    ]},
+    {"dt":"Client Script","filters":[
+        [
+            "module","in",[
+                "Khetan HRMS"
+            ]
+        ]
+    ]},
     {"dt":"Report","filters":[
         [
             "module","in",[
                 "Khetan HRMS"
             ]
         ]
-    ]}
+    ]},
+    {"dt":"Role","filters":[
+        [
+            "name","in",[
+                "Employee Creator"
+            ]
+        ]
+    ]},
+    {"dt":"Custom DocPerm","filters":[
+        [
+            "name","in",[
+                "1c8ad451db"
+            ]
+        ]
+    ]},
 
 ]

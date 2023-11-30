@@ -191,6 +191,7 @@ def execute(filters=None):
         "label": "Advance",
         "fieldname": "advance",
         "fieldtype": "Data",
+        "allow_on_submit": True,
         "width": 100
     })
     columns.append({

@@ -1,0 +1,14 @@
+[
+ {
+  "_liked_by": "[\"jignasa.chavda@sanskartechnolab.in\"]",
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Employee",
+  "enabled": 1,
+  "modified": "2023-11-30 17:24:19.645840",
+  "module": "Khetan HRMS",
+  "name": "Show plant name as per company",
+  "script": "frappe.ui.form.on('Employee', {\n    refresh: function(frm) {\n        var company = frm.doc.company;\n\n        if (company == \"SANTOSH UNIT 2\") {\n          \n            frm.set_df_property('plant', 'options', ['Pipe Plant', 'Tundish Plant', 'Buluster Plant']);\n        } else if (company == \"Khetan Udyog\") {\n            \n            frm.set_df_property('plant', 'options', ['Telescopic Plant']);\n        }\n    },\n    company: function(frm){\n        var company = frm.doc.company;\n\n        if (company == \"SANTOSH UNIT 2\") {\n          \n            frm.set_df_property('plant', 'options', ['Pipe Plant', 'Tundish Plant', 'Buluster Plant']);\n            \n        } else if (company == \"Khetan Udyog\") {\n            \n            frm.set_df_property('plant', 'options', ['Telescopic Plant']);\n        }\n        else{\n            frm.set_df_property('plant', 'options', ['Pipe Plant', 'Tundish Plant', 'Buluster Plant','Telescopic Plant']);\n        }\n        frm.refresh_field('plant');\n    }   \n});\n",
+  "view": "Form"
+ }
+]
