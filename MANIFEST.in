@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include khetanhrms *.css
+recursive-include khetanhrms *.csv
+recursive-include khetanhrms *.html
+recursive-include khetanhrms *.ico
+recursive-include khetanhrms *.js
+recursive-include khetanhrms *.json
+recursive-include khetanhrms *.md
+recursive-include khetanhrms *.png
+recursive-include khetanhrms *.py
+recursive-include khetanhrms *.svg
+recursive-include khetanhrms *.txt
+recursive-exclude khetanhrms *.pyc
