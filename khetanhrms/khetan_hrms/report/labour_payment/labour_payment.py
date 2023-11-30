@@ -94,7 +94,6 @@ def convert_to_hour_minute_format(total_hours, total_minutes):
     formatted_hours = "{}.{}".format(int(hours), int(minutes))
 
 
-    # print("Formatted hours after rounding: {}".format(formatted_hours))
 
     return formatted_hours
 
