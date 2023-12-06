@@ -16,6 +16,7 @@ frappe.ui.form.on('Labour Payment Upload', {
                         var row = frappe.model.add_child(cur_frm.doc, 'Labours Payment Upload Sheet', 'employee_details');
 						row.employee = data.employee;
                         row.employee_name = data.employee_name;
+						row.employee_type = data.employee_type;
 						
                        
                     });
