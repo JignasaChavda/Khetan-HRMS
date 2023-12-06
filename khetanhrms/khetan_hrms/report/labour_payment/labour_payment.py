@@ -155,6 +155,14 @@ def execute(filters=None):
                                      filters={"attendance_date": ["between", [start_date, end_date]],"custom_employee_type": employee_type_filter,"docstatus":1},
                                      fields=['employee', 'employee_name', 'attendance_date', 'new_hours'])
 
+    labour_payment = frappe.get_all("Labour Payment Upload",
+                                     filters={"date": ["between", [start_date, end_date]],"category": employee_type_filter},
+                                     fields=['name'])
+    labour_payment_doc = None
+    if labour_payment:
+        print("\n\n",labour_payment[0].name,"\n\n")
+        labour_payment_doc = frappe.get_doc("Labour Payment Upload",labour_payment[0].name)
+   
     # Group data by employee
     employee_data = {}
     for entry in attendance_data:
@@ -166,6 +174,9 @@ def execute(filters=None):
                 "new_hours": {},
                 "holidays": []  # Add a list to store holiday information for each employee
             }
+            
+           
+
         employee_data[employee_id]["new_hours"][entry.attendance_date.day] = entry.new_hours
 
     # Dynamically generate columns for each day in the selected month
@@ -281,6 +292,7 @@ def execute(filters=None):
 
     data = []
 
+
     # Populate data with attendance entries
     for employee_id, employee_info in employee_data.items():
         # Get the employee's holiday list
@@ -296,9 +308,30 @@ def execute(filters=None):
         row = {
             "employee": employee_info["employee"],
             "employee_name": employee_info["employee_name"],
+            "advance": 0,
+            "cpn": 0,
+            "fine": 0,
+            "previous_balance": 0,
+            "cashpaid": 0,
+            "bankpaid": 0,
+            "balance":0
         }
+    
+        if labour_payment_doc is not None:
+            for record in labour_payment_doc.employee_details:
+                if record.employee == employee_id:
+                   
+                    row["advance"] = record.get("advance", None)
+                    row["cpn"] = record.get("cpn", None)
+                    row["fine"] = record.get("fine", None)
+                    row["previous_balance"] = record.get("previous_balance", None)
+                    row["cashpaid"] = record.get("cashpaid", None)
+                    row["bankpaid"] = record.get("bankpaid", None)
 
+                   
+                    
        
+        
 
         # Add new_hours for each day in the row
         for day in range(1, days_in_month + 1):
@@ -351,11 +384,24 @@ def execute(filters=None):
         total_payment = rounding_hours * daily_rate
         row["total_payment"] = total_payment
 
+        
+        advance = row["advance"]
+        cpn = row["cpn"]
+        fine = row["fine"]
+        previous_balance = row["previous_balance"]
+        cashpaid = row["cashpaid"]
+        bankpaid = row["bankpaid"]
+
+        # Calculate balance using the provided formula
+        balance = (total_payment + previous_balance)-(advance+cashpaid+bankpaid+cpn+fine)
+        row["balance"] = balance
+    
+
         data.append(row)
 
     # Add a row for "Total Hours" at the end
     total_row = {
-        "employee_name": "<b>Total</b>",  # You can change this label if needed
+        "employee_name": "<b>Total</b>",    
         "is_last_row": 1
     }
 
@@ -375,13 +421,28 @@ def execute(filters=None):
     total_minutes_row = sum(float(row["total_minutes"]) for row in data)
     total_rounded_hours_row = sum(float(row["rounded_hours"]) for row in data)
     total_hour_minute_row = convert_to_hour_minute_format(total_hours_row,total_minutes_row)
+    total_payment_row = sum((row["total_payment"]) for row in data)
+    total_advance_row = sum((row["advance"]) for row in data)
+    total_cpn_row = sum((row["cpn"]) for row in data)
+    total_fine_row = sum((row["fine"]) for row in data)
+    total_previous_balance_row = sum((row["previous_balance"]) for row in data)
+    total_cashpaid_row = sum((row["cashpaid"]) for row in data)
+    total_bankpaid_row = sum((row["bankpaid"]) for row in data)
+    total_balance_row = sum((row["balance"]) for row in data)
     
 
     total_row["total_hours"] = total_hours_row
     total_row["total_minutes"] = total_minutes_row
-
     total_row["total_new_hours"] = f"<b>{total_hour_minute_row}</b>"
     total_row["rounded_hours"] = f"<b>{total_rounded_hours_row}</b>"
+    total_row["total_payment"] = f"<b>{total_payment_row}</b>"
+    total_row["advance"] = f"<b>{total_advance_row}</b>"
+    total_row["cpn"] = f"<b>{total_cpn_row}</b>"
+    total_row["fine"] = f"<b>{total_fine_row}</b>"
+    total_row["previous_balance"] = f"<b>{total_previous_balance_row}</b>"
+    total_row["cashpaid"] = f"<b>{total_cashpaid_row}</b>"
+    total_row["bankpaid"] = f"<b>{total_bankpaid_row}</b>"
+    total_row["balance"] = f"<b>{total_balance_row}</b>"
     
  
 
@@ -389,19 +450,3 @@ def execute(filters=None):
 
 
     return columns, data
-
-
-@frappe.whitelist(allow_guest=True)
-def get_excel_data(month, year, employee_type):
-    filters = {"month": month, "year": year, "employee_type": employee_type}
-
-    # Call the execute function to get the data
-    columns, data = execute(filters)
-
-    # Prepare data for export
-    export_data = {
-        "columns": columns,
-        "data": data
-    }
-
-    return export_data

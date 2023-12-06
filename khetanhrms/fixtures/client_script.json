@@ -10,5 +10,17 @@
   "name": "Show plant name as per company",
   "script": "frappe.ui.form.on('Employee', {\n    refresh: function(frm) {\n        var company = frm.doc.company;\n\n        if (company == \"SANTOSH UNIT 2\") {\n          \n            frm.set_df_property('plant', 'options', ['Pipe Plant', 'Tundish Plant', 'Buluster Plant']);\n        } else if (company == \"Khetan Udyog\") {\n            \n            frm.set_df_property('plant', 'options', ['Telescopic Plant']);\n        }\n    },\n    company: function(frm){\n        var company = frm.doc.company;\n\n        if (company == \"SANTOSH UNIT 2\") {\n          \n            frm.set_df_property('plant', 'options', ['Pipe Plant', 'Tundish Plant', 'Buluster Plant']);\n            \n        } else if (company == \"Khetan Udyog\") {\n            \n            frm.set_df_property('plant', 'options', ['Telescopic Plant']);\n        }\n        else{\n            frm.set_df_property('plant', 'options', ['Pipe Plant', 'Tundish Plant', 'Buluster Plant','Telescopic Plant']);\n        }\n        frm.refresh_field('plant');\n    }   \n});\n",
   "view": "Form"
+ },
+ {
+  "_liked_by": "[\"jignasa.chavda@sanskartechnolab.in\"]",
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Labour Payment Upload",
+  "enabled": 1,
+  "modified": "2023-12-06 12:18:27.173396",
+  "module": "Khetan HRMS",
+  "name": "Display Employee Type based on Company",
+  "script": "frappe.ui.form.on('Labour Payment Upload', {\n    refresh(frm) {\n    \n\n        // Filter the Employee Type based on the selected company\n        frm.fields_dict['category'].get_query = function(doc, cdt, cdn) {\n            return {\n                filters: {\n                    company: doc.company\n                }\n            };\n        };\n    }\n});\n",
+  "view": "Form"
  }
 ]
