@@ -5,20 +5,25 @@ from decimal import ROUND_HALF_UP, Decimal
 from frappe.utils import flt
 import frappe
 import calendar
+from frappe.utils.xlsxutils import make_xlsx
+import csv
+from openpyxl import Workbook
+from io import BytesIO
 
 def get_month_number(month_name):
     return list(calendar.month_abbr).index(month_name.capitalize()[:3])
 
 def get_employee_holiday_list(employee_id):
+
     # Fetch the employee's holiday list from the Employee master
     employee = frappe.get_doc("Employee", employee_id)
     return employee.holiday_list
 
-def calculate_total_new_hours(new_hours):
+def calculate_total_new_hours(new_hour_values):
     # Calculate total hours without rounding
     total_hours = 0
 
-    for hour in new_hours:
+    for hour in new_hour_values:
         if hour is not None:
             if isinstance(hour, str):  # Handle the case when new_hours is a string
                 parts = hour.split('.')
@@ -28,14 +33,16 @@ def calculate_total_new_hours(new_hours):
             elif isinstance(hour, (int, float)):  # Handle the case when new_hours is a number
                 total_hours += int(hour)
 
+    print("\n\n total hours:", total_hours)
     return total_hours
 
-def calculate_total_new_minutes(new_hours, employee_name):
+def calculate_total_new_minutes(new_hour_value):
+
      # Filter out None values and calculate total minutes
     total_minutes = 0
     contributing_minutes = []
 
-    for value in new_hours:
+    for value in new_hour_value:
         if value is not None:
             if isinstance(value, str) and '.' in value:
                 parts = value.split('.')
@@ -46,7 +53,6 @@ def calculate_total_new_minutes(new_hours, employee_name):
                     total_minutes += minutes_value
 
     total_minutes_as_string = str(int(total_minutes))
-    print(f"Employee: {employee_name}, minutes: {total_minutes}, Total minutes: {total_minutes_as_string}")
     return total_minutes_as_string
 
 
@@ -70,39 +76,70 @@ def calculate_total_new_minutes_for_row(new_hours):
 
     return total_minutes_as_string
 
+def round_to_nearest_20(minutes):
+    # Initialize the variable with the original value
+    rounded_minutes = minutes
+    
+    if 1 <= minutes <= 15:
+        rounded_minutes = 20
+
+    elif 16 <= minutes <= 30:
+        rounded_minutes = 25
+
+    elif 31 <= minutes <= 40:
+        rounded_minutes = 35
+
+    elif 41 <= minutes:
+        rounded_minutes = 60
+
+    return rounded_minutes
+
 
 def convert_to_hour_minute_format(total_hours, total_minutes):
-    total_hours = float(total_hours)
-    total_minutes = float(total_minutes)
+    if total_hours is not None and total_minutes is not None:
+        total_hours = float(total_hours)
+        total_minutes = float(total_minutes)
 
-    # print("Original input: {} hours and {} minutes".format(total_hours, total_minutes))
+        # Add the extra hours if total_minutes is greater than or equal to 60
+        if total_minutes >= 60:
+            additional_hours, remaining_minutes = divmod(total_minutes, 60)
+            total_hours += additional_hours
+            total_minutes = remaining_minutes
 
-    # Add the extra hours if total_minutes is greater than or equal to 60
-    if total_minutes >= 60:
-        additional_hours, remaining_minutes = divmod(total_minutes, 60)
-        total_hours += additional_hours
-        total_minutes = remaining_minutes
-        # print("Added {} hours, remaining minutes: {}".format(additional_hours, remaining_minutes))
-        # print("Updated total hours: {}".format(total_hours))
+        # Extract hours and minutes from the input
+        hours, minutes = divmod(total_hours * 60 + total_minutes, 60)
 
-    # Extract hours and minutes from the input
-    hours, minutes = divmod(total_hours * 60 + total_minutes, 60)
-    # print("Total minutes after conversion: {}".format(total_hours * 60 + total_minutes))
-    # print("Extracted hours: {}, Extracted minutes: {}".format(hours, minutes))
+        # Correct the rounding to two decimal places
+        formatted_hours = "{}.{}".format(int(hours), int(minutes))
 
-    # Correct the rounding to two decimal places
-    formatted_hours = "{}.{}".format(int(hours), int(minutes))
-
+        return formatted_hours
+    else:
+        return None  # or some default value if needed
 
 
-    return formatted_hours
+def rounded_hours(total_hours):
+    if total_hours is not None and '.' in total_hours:
+        before_decimal, after_decimal = total_hours.split('.')
+        
+        # Check if both parts are present
+        if before_decimal and after_decimal:
+            tot_minutes = int(before_decimal) * 60 + int(after_decimal)
+            tot_hours = round(tot_minutes / 60)
+            return tot_hours
+    return None
 
+def get_employee_daily_rate(employee_id):
+
+    # Fetch the daily rate from the Employee master
+    employee = frappe.get_doc("Employee", employee_id)
+    return employee.daily_rate if employee.daily_rate else 0
 
 
 def execute(filters=None):
     # Extract month and year from filters
     month = filters.get("month", "")
     year = int(filters.get("year", 0))
+    employee_type_filter = filters.get("employee_type", "")
 
     # Ensure the month and year are provided
     if not month or not year:
@@ -115,7 +152,7 @@ def execute(filters=None):
 
     # Fetch data from Attendance table with date range filter
     attendance_data = frappe.get_all("Attendance",
-                                     filters={"attendance_date": ["between", [start_date, end_date]],"docstatus":1},
+                                     filters={"attendance_date": ["between", [start_date, end_date]],"custom_employee_type": employee_type_filter,"docstatus":1},
                                      fields=['employee', 'employee_name', 'attendance_date', 'new_hours'])
 
     # Group data by employee
@@ -159,10 +196,10 @@ def execute(filters=None):
         })
     # Add a total_minutes column for each employee
     columns.append({
-        "label": "Total Hours",
+        "label": "Total Hour",
         "fieldname": "total_hours",
         "fieldtype": "Data",
-		"hidden": 1,
+		# "hidden": 1,
         "width": 100
     })
     # Add a total_minutes column for each employee
@@ -170,13 +207,19 @@ def execute(filters=None):
         "label": "Total Minutes",
         "fieldname": "total_minutes",
         "fieldtype": "Data",
-        "hidden": 1,
+        # "hidden": 1,
         "width": 100
     })
     # Add a total_minutes column for each employee
     columns.append({
         "label": "Total Hours",
         "fieldname": "total_new_hours",
+        "fieldtype": "Data",
+        "width": 100
+    })
+    columns.append({
+        "label": "Rounded Hours",
+        "fieldname": "rounded_hours",
         "fieldtype": "Data",
         "width": 100
     })
@@ -255,9 +298,7 @@ def execute(filters=None):
             "employee_name": employee_info["employee_name"],
         }
 
-        total_new_hours = calculate_total_new_hours(employee_info["new_hours"].values())
-        total_new_minutes = calculate_total_new_minutes(employee_info["new_hours"].values(), employee_info["employee_name"])
-        formatted_time = convert_to_hour_minute_format(total_new_hours, total_new_minutes)
+       
 
         # Add new_hours for each day in the row
         for day in range(1, days_in_month + 1):
@@ -268,24 +309,47 @@ def execute(filters=None):
                 if day not in employee_info["new_hours"]:
                     new_hour_value = "WO"  # Set "WO" for holidays with no attendance record
                 elif employee_info["new_hours"][day] is None:
-                    new_hour_value = 0  # No working hours, set the column to 0
+                    new_hour_value = "0"  # No working hours, set the column to 0
                 else:
                     new_hour_value = str(employee_info["new_hours"].get(day, 0))  # Convert to string
             else:
                 if employee_info["new_hours"].get(day) is None:
-                    new_hour_value = 0  # No working hours, set the column to 0
+                    new_hour_value = "0"  # No working hours, set the column to 0
                 else:
                     new_hour_value = str(employee_info["new_hours"].get(day, 0))  # Convert to string
             
-            # # Print each new_hour value
-            # print(f"Employee: {employee_info['employee']}, Day: {day}, New Hours: {new_hour_value}")
-            
-            # Set the new_hour value into the column
+
+            #  # Apply rounding logic if the value is a decimal
+            if '.' in new_hour_value:
+             
+                # Extract the minutes part
+                minutes_value = int(new_hour_value.split('.')[1])
+
+                rounded_minutes = round_to_nearest_20(minutes_value)
+
+                if rounded_minutes == 60:
+                    new_hour_value = f"{int(new_hour_value.split('.')[0]) + 1}.0"
+                else:
+                    new_hour_value = f"{new_hour_value.split('.')[0]}.{rounded_minutes}"
+
             row[day_key] = new_hour_value
+        
+        hour_values = [row.get(f"day_{day}_new_hours", 0) for day in range(1, days_in_month + 1)]
+
+        total_new_hours = calculate_total_new_hours(hour_values)
+        total_new_minutes = calculate_total_new_minutes(hour_values)
+        total_hours = convert_to_hour_minute_format(total_new_hours, total_new_minutes)
+        rounding_hours = rounded_hours(total_hours)
 
         row["total_hours"] = total_new_hours
         row["total_minutes"] = total_new_minutes
-        row["total_new_hours"] = formatted_time
+        row["total_new_hours"] = total_hours
+        row["rounded_hours"] = rounding_hours 
+
+        daily_rate = get_employee_daily_rate(employee_id)
+        row["rate"] = daily_rate 
+        total_payment = rounding_hours * daily_rate
+        row["total_payment"] = total_payment
 
         data.append(row)
 
@@ -301,19 +365,23 @@ def execute(filters=None):
         total_hours_for_day = calculate_total_new_hours([row.get(day_key, 0) for row in data])
         total_minutes_for_day = calculate_total_new_minutes_for_row([row.get(day_key, 0) for row in data])
         total_new_hours_for_day = convert_to_hour_minute_format(total_hours_for_day,total_minutes_for_day)
+    
         total_row[day_key] = f"<b>{total_new_hours_for_day}</b>"
 
     
 
     # Calculate the total hours for each employee
-    total_hours_row = sum(float(row["total_hours"]) for row in data)
+    total_hours_row = sum((row["total_hours"]) for row in data)
     total_minutes_row = sum(float(row["total_minutes"]) for row in data)
+    total_rounded_hours_row = sum(float(row["rounded_hours"]) for row in data)
     total_hour_minute_row = convert_to_hour_minute_format(total_hours_row,total_minutes_row)
+    
 
     total_row["total_hours"] = total_hours_row
     total_row["total_minutes"] = total_minutes_row
 
     total_row["total_new_hours"] = f"<b>{total_hour_minute_row}</b>"
+    total_row["rounded_hours"] = f"<b>{total_rounded_hours_row}</b>"
     
  
 
@@ -322,3 +390,18 @@ def execute(filters=None):
 
     return columns, data
 
+
+@frappe.whitelist(allow_guest=True)
+def get_excel_data(month, year, employee_type):
+    filters = {"month": month, "year": year, "employee_type": employee_type}
+
+    # Call the execute function to get the data
+    columns, data = execute(filters)
+
+    # Prepare data for export
+    export_data = {
+        "columns": columns,
+        "data": data
+    }
+
+    return export_data
